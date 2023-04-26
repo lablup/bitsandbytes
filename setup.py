@@ -4,8 +4,22 @@
 # LICENSE file in the root directory of this source tree.
 import glob
 import os
+import subprocess
+import sys
 
 from setuptools import find_packages, setup
+from setuptools.command.build_py import build_py
+
+
+class MakeBuild(build_py):
+    def run(self):
+        cuda_version = "117"
+        cuda_label = "cuda11x"
+        make = ["make", cuda_label]
+        if subprocess.call(make, env={**os.environ, "CUDA_VERSION": cuda_version}) != 0:
+            sys.exit(-1)
+        super().run()
+
 
 libs = list(glob.glob("./bitsandbytes/libbitsandbytes*.so"))
 libs = [os.path.basename(p) for p in libs]
@@ -27,6 +41,9 @@ setup(
     url="https://github.com/TimDettmers/bitsandbytes",
     packages=find_packages(),
     package_data={"": libs},
+    cmdclass={
+        "build_py": MakeBuild,
+    },
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     classifiers=[
