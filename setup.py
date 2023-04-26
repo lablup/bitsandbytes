@@ -13,12 +13,31 @@ from setuptools.command.build_py import build_py
 
 class MakeBuild(build_py):
     def run(self):
-        cuda_version = "117"
-        cuda_label = "cuda11x"
-        make = ["make", cuda_label]
-        if subprocess.call(make, env={**os.environ, "CUDA_VERSION": cuda_version}) != 0:
+        cuda_version = self._cuda_version
+        major, minor = cuda_version.split(".")
+        cuda_label = self._build_cuda_label(*cuda_version.split("."))
+        if subprocess.call(["make", cuda_label], env={**os.environ, "CUDA_VERSION": cuda_version}) != 0:
             sys.exit(-1)
         super().run()
+
+    def _build_cuda_label(self, major: str, minor: str) -> str:
+        postfix = ""
+        if int(major) < 7 or (int(major) == 7 and int(minor) < 5):
+            postfix = "_nomatmul"
+        cuda_version = major + minor
+        if len(cuda_version) < 3:
+            return "cuda92" + postfix
+        if cuda_version == "110":
+            return "cuda110" + postfix
+        if cuda_version.startswith("11"):
+            return "cuda11x" + postfix
+        return "cpu"
+
+    @property
+    def _cuda_version(self) -> str:
+        import torch
+
+        return torch.version.cuda.replace(".", "")  # 117
 
 
 libs = list(glob.glob("./bitsandbytes/libbitsandbytes*.so"))
