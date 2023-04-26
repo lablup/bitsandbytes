@@ -31,19 +31,14 @@ libcudart = ctypes.CDLL("libcudart.so")
 
 version = ctypes.c_int()
 err = libcudart.cudaRuntimeGetVersion(ctypes.byref(version))
-print(f"cudart.cudaRuntimeGetVersion(): {err} -- {version.value}")
+print(f"cudart.cudaRuntimeGetVersion(): {version.value} (Error: {err})")
 
-major = version.value // 1000
-minor = (version.value % 1000) // 10
-
-major = str(major)
-minor = str(minor)
+major = str(version.value // 1000)
+minor = str((version.value % 1000) // 10)
 
 cuda_label = build_cuda_label(major, minor)
 cuda_version = major + minor
-print("=========================================")
-print(f"subprocess$ CUDA_VERSION={cuda_version} make {cuda_label}")
-print("=========================================")
+print(f"CUDA_VERSION={cuda_version} make {cuda_label}")
 if subprocess.call(["make", cuda_label], env={**os.environ, "CUDA_VERSION": cuda_version}) != 0:
     sys.exit(-1)
 
